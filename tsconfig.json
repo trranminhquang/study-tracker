@@ -17,10 +17,15 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@src/*": ["src/*"],
       "@assets/*": ["src/assets/*"],
+      "@common/*": ["src/common/*"],
       "@locales/*": ["src/locales/*"],
-      "@pages/*": ["src/pages/*"]
+      "@pages/*": ["src/pages/*"],
+      "@components/*": ["src/components/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@hocs/*": ["src/hocs/*"],
+      "@lib/*": ["src/lib/*"],
+      "@providers/*": ["src/providers/*"],
     }
   },
   "include": [
@@ -29,5 +34,5 @@
     "vite.config.base.ts",
     "vite.config.chrome.ts",
     "vite.config.firefox.ts"
-  ],
+  ]
 }

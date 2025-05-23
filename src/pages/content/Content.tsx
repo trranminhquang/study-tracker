@@ -1,13 +1,13 @@
 import { RouterProvider } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import router from "@pages/popup/router";
+import router from "@pages/content/router";
 
 import AuthProvider from "@providers/auth-provider";
 import AppProvider from "@providers/app-provider";
 
 const queryClient = new QueryClient();
 
-export default function PopupIndex() {
+const ContentIndex = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -17,4 +17,6 @@ export default function PopupIndex() {
       </AuthProvider>
     </QueryClientProvider>
   );
-}
+};
+
+export default ContentIndex;
