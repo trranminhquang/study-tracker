@@ -6,11 +6,11 @@ import {
   SiteHandler,
 } from "./site.interface";
 
-export class KhanAcademyHandler implements SiteHandler {
-  site = "khanacademy";
+export class W3SchoolsHandler implements SiteHandler {
+  site = "w3schools";
 
   isMatch(): boolean {
-    return /khanacademy/.test(window.location.hostname);
+    return /w3schools\.com/.test(window.location.hostname);
   }
 
   getQuestionType(): QuestionType {
@@ -19,7 +19,7 @@ export class KhanAcademyHandler implements SiteHandler {
 
   extractQuestion(): Question | null {
     const questionEl = document.querySelector(
-      ".perseus-question .perseus-renderer"
+      ".exercisewindow .question, .exercisewindow h2"
     );
     if (!questionEl) return null;
 
