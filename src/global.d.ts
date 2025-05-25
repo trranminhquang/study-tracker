@@ -9,3 +9,7 @@ declare module '*.json' {
   const content: string;
   export default content;
 }
+
+interface Window {
+  _studyTrackerFetchPatched?: boolean;
+}

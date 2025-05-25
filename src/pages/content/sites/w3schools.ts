@@ -7,9 +7,9 @@ import {
 } from "./site.interface";
 
 export class W3SchoolsHandler implements SiteHandler {
-  site = "w3schools";
+  site = "w3schools.com";
 
-  isMatch(): boolean {
+  get isMatch(): boolean {
     return /w3schools\.com/.test(window.location.hostname);
   }
 
@@ -67,5 +67,10 @@ export class W3SchoolsHandler implements SiteHandler {
         true
       );
     }
+  }
+
+  // No fetch interception needed for W3Schools at this time
+  async interceptFetchResponse(response: Response): Promise<void> {
+    // No-op
   }
 }

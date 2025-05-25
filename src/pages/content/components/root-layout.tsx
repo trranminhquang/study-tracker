@@ -2,28 +2,37 @@ import { useEffect } from "react";
 import { Link, Outlet } from "react-router";
 import { APP_ROUTES } from "@common/constants";
 import { RequireAuth, RequireGuest } from "@components/authentication";
-
-import {
-  SiteHandler,
-  QuestionAttempt,
-  KhanAcademyHandler,
-  W3SchoolsHandler,
-} from "@pages/content/sites";
-
-const siteHandlers: SiteHandler[] = [
-  new KhanAcademyHandler(),
-  new W3SchoolsHandler(),
-];
+import { siteHandlers, QuestionAttempt } from "@pages/content/sites";
 
 export default function RootLayout() {
   useEffect(() => {
-    const handler = siteHandlers.find((h) => h.isMatch());
-    if (handler) {
-      handler.attachListeners((attempt: QuestionAttempt) => {
-        console.log("Captured attempt:", attempt);
-        // send attempt to background script or handle it as needed
-      });
+    const handler = siteHandlers.find((h) => h.isMatch);
+    if (!handler) return;
+
+    const attemptStartTime = Date.now();
+
+    // Patch fetch only once per handler
+    const originalFetch = window.fetch;
+
+    if (!window._studyTrackerFetchPatched) {
+      window.fetch = async function (...args) {
+        const response = await originalFetch.apply(this, args);
+        if (typeof handler.interceptFetchResponse === "function") {
+          await handler.interceptFetchResponse(response);
+        }
+        return response;
+      };
+
+      // Mark that fetch has been patched to avoid multiple patches
+      window._studyTrackerFetchPatched = true;
     }
+
+    // Cleanup the listener when the component is unmounted
+    handler.attachListeners((attempt: QuestionAttempt) => {
+      attempt.durationMs = Date.now() - attemptStartTime;
+      // send attempt to background script or handle it as needed
+      console.log("Captured question attempt:", attempt);
+    });
   }, []);
 
   return (

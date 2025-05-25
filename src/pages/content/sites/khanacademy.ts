@@ -1,3 +1,4 @@
+import { MessageType } from "@lib/chrome/messaging";
 import {
   Answer,
   Question,
@@ -7,65 +8,89 @@ import {
 } from "./site.interface";
 
 export class KhanAcademyHandler implements SiteHandler {
-  site = "khanacademy";
-
-  isMatch(): boolean {
-    return /khanacademy/.test(window.location.hostname);
+  site = "khanacademy.org";
+  get isMatch(): boolean {
+    return /khanacademy\.org/.test(location.href);
   }
 
   getQuestionType(): QuestionType {
     return QuestionType.TEXT;
   }
 
-  extractQuestion(): Question | null {
-    const questionEl = document.querySelector(
-      ".perseus-question .perseus-renderer"
-    );
-    if (!questionEl) return null;
-
+  extractQuestion(): Question {
+    // const questionEl = document.querySelector(
+    //   ".perseus-question .perseus-renderer"
+    // );
     return {
       id: "",
       type: QuestionType.TEXT,
-      content: questionEl.textContent || "",
+      content: 'questionEl?.innerHTML || "",',
       url: location.href,
       meta: {},
     };
   }
 
-  extractAnswer(): Answer | null {
-    const input = document.querySelector(
-      'input[type="text"], input[type="number"], textarea'
-    );
-    if (!input) return null;
-
+  extractAnswer(): Answer {
+    // const input = document.querySelector(
+    //   'input[type="text"], input[type="number"], textarea'
+    // );
     return {
       type: QuestionType.TEXT,
-      value: (input as HTMLInputElement).value,
+      value: "(input as HTMLInputElement).value",
     };
   }
 
   attachListeners(onCapture: (attempt: QuestionAttempt) => void) {
-    const submitBtn = document.querySelector(
-      'button[type="submit"], ._1f6t1qk'
-    );
-    if (submitBtn) {
-      submitBtn.addEventListener(
-        "click",
-        () => {
-          const question = this.extractQuestion();
-          const answer = this.extractAnswer();
-          if (question && answer) {
-            onCapture({
+    // wait for the content to load
+    const observer = new MutationObserver(() => {
+      const button = document.querySelector(
+        'button[data-testid="exercise-check-answer"]'
+      );
+      if (button) {
+        // Attach the event listener only once
+        button.addEventListener(
+          "click",
+          () => {
+            const question = this.extractQuestion();
+            const answer = this.extractAnswer();
+
+            const attempt: QuestionAttempt = {
               question,
               answer,
               timestamp: Date.now(),
               site: this.site,
               url: location.href,
-            });
-          }
-        },
-        true
-      );
+            };
+            onCapture(attempt);
+          },
+          { once: true }
+        );
+        // Disconnect observer after attaching the listener to prevent multiple attachments
+        // observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Cleanup observer when the component is unmounted
+    return () => {
+      observer.disconnect();
+    };
+  }
+
+  async interceptFetchResponse(response: Response): Promise<void> {
+    // Only handle relevant Khan Academy API responses
+    if (response.url.includes("khanacademy.org/api/internal/_mt/graphql/attemptProblem")) {
+      // Clone the response so the page can still read it
+      const cloned = response.clone();
+      cloned.json().then((data) => {
+        // Do something with the response data
+        console.log("[KhanAcademyHandler] Intercepted API response:", data);
+        // Optionally send to background: chrome.runtime.sendMessage({ type: "API_RESPONSE", data });
+      });
     }
   }
 }

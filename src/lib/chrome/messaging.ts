@@ -7,6 +7,9 @@ export enum MessageType {
   USER_SIGNED_IN = "USER_SIGNED_IN",
   USER_SIGN_OUT = "USER_SIGN_OUT",
   USER_SIGNED_OUT = "USER_SIGNED_OUT",
+
+  API_REQUEST = "API_REQUEST",
+  API_RESPONSE = "API_RESPONSE",
 }
 
 export type Message<P = any> = {

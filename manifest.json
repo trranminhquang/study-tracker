@@ -14,7 +14,8 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "webRequest"
   ],
   "content_scripts": [
     {

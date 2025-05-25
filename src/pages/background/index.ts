@@ -43,6 +43,9 @@ chrome.runtime.onMessage.addListener(
         });
         break;
       }
+      case MessageType.API_RESPONSE: {
+        console.log('API response received:', payload);
+      }
     }
     return true;
   }
