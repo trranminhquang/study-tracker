@@ -8,8 +8,6 @@ export enum QuestionType {
 export interface BaseQuestion {
   id?: string; // optional unique identifier, can be generated
   type: QuestionType;
-  content: string; // question text or HTML
-  url: string; // e.g. 'khanacademy', 'w3school'
   meta?: Record<string, unknown>; // site-specific extra info
 }
 
@@ -25,6 +23,8 @@ export interface MultipleChoiceQuestion extends BaseQuestion {
 
 export interface TextQuestion extends BaseQuestion {
   type: QuestionType.TEXT;
+  content: string; // the question text or prompt
+  description?: string; // optional description or hint
 }
 
 export interface VideoQuestion extends BaseQuestion {
@@ -38,33 +38,52 @@ export type Question =
   | TextQuestion
   | VideoQuestion;
 
+export interface BaseAnswer {}
+
+export interface SingleChoiceAnswer extends BaseAnswer {
+  type: QuestionType.SINGLE_CHOICE;
+  value: string; // selected choice
+}
+
+export interface MultipleChoiceAnswer extends BaseAnswer {
+  type: QuestionType.MULTIPLE_CHOICE;
+  value: string[]; // selected choices
+}
+
+export interface TextAnswer extends BaseAnswer {
+  type: QuestionType.TEXT;
+  value: string; // user input text
+}
+
+export interface VideoAnswer extends BaseAnswer {
+  type: QuestionType.VIDEO;
+  value: string; // for video answers, could be a URL or video ID
+}
+
 export type Answer =
-  | { type: QuestionType.SINGLE_CHOICE; value: string }
-  | { type: QuestionType.MULTIPLE_CHOICE; value: string[] }
-  | { type: QuestionType.TEXT; value: string }
-  | { type: QuestionType.VIDEO; value: string }; // for video answers, could be a URL or video ID
+  | SingleChoiceAnswer
+  | MultipleChoiceAnswer
+  | TextAnswer
+  | VideoAnswer;
 
 export interface QuestionAttempt {
   question: Question;
   answer: Answer;
-  timestamp: number;
-  site: string;
-  url: string;
+  site?: string;
+  url?: string;
   isCorrect?: boolean; // optional, for correctness tracking
   isSkipped?: boolean; // optional, for skipped questions
   isTimedOut?: boolean; // optional, for timeouts
   durationMs?: number; // time spent on the question in milliseconds
+  timestamp?: number; // optional, when the attempt was made
 }
 
 export interface SiteHandler {
   site: string;
   isMatch: boolean;
+  extractQuestion: () => Question;
+  extractAnswer: () => Answer;
   getQuestionType: () => QuestionType;
-  extractQuestion: () => Question | null;
-  extractAnswer: () => Answer | null;
   attachListeners: (onCapture: (attempt: QuestionAttempt) => void) => void;
-  /**
-   * Optionally intercept fetch responses for this site.
-   */
   interceptFetchResponse?: (response: Response) => Promise<void>;
 }

@@ -1,76 +1,189 @@
+import { SITE_DOMAINS } from "@common/constants";
 import {
-  Answer,
-  Question,
-  QuestionAttempt,
   QuestionType,
+  Question,
+  Answer,
+  QuestionAttempt,
   SiteHandler,
+  BaseQuestion,
+  BaseAnswer,
+  SingleChoiceQuestion,
+  MultipleChoiceQuestion,
+  TextQuestion,
+  VideoQuestion,
+  SingleChoiceAnswer,
+  MultipleChoiceAnswer,
+  TextAnswer,
+  VideoAnswer,
 } from "./site.interface";
 
 export class W3SchoolsHandler implements SiteHandler {
-  site = "w3schools.com";
+  public readonly site = SITE_DOMAINS.W3_SCHOOLS;
 
   get isMatch(): boolean {
-    return /w3schools\.com/.test(window.location.hostname);
+    return window.location.hostname.endsWith(this.site);
   }
 
   getQuestionType(): QuestionType {
-    return QuestionType.TEXT;
+    const questionTypes = [
+      QuestionType.SINGLE_CHOICE,
+      QuestionType.MULTIPLE_CHOICE,
+      QuestionType.TEXT,
+      QuestionType.VIDEO,
+    ];
+
+    return questionTypes[Math.floor(Math.random() * questionTypes.length)];
   }
 
-  extractQuestion(): Question | null {
-    const questionEl = document.querySelector(
-      ".exercisewindow .question, .exercisewindow h2"
-    );
-    if (!questionEl) return null;
-
-    return {
-      id: "",
-      type: QuestionType.TEXT,
-      content: questionEl.textContent || "",
-      url: location.href,
-      meta: {},
+  private extractSingleChoiceQuestion(
+    baseQuestion: BaseQuestion
+  ): SingleChoiceQuestion {
+    const question: SingleChoiceQuestion = {
+      ...baseQuestion,
+      type: QuestionType.SINGLE_CHOICE,
+      choices: [],
     };
+    return question;
   }
 
-  extractAnswer(): Answer | null {
-    const input = document.querySelector(
-      'input[type="text"], input[type="number"], textarea'
-    );
-    if (!input) return null;
-
-    return {
-      type: QuestionType.TEXT,
-      value: (input as HTMLInputElement).value,
+  private extractMultipleChoiceQuestion(
+    baseQuestion: BaseQuestion
+  ): MultipleChoiceQuestion {
+    const question: MultipleChoiceQuestion = {
+      ...baseQuestion,
+      type: QuestionType.MULTIPLE_CHOICE,
+      choices: [],
     };
+    return question;
   }
 
-  attachListeners(onCapture: (attempt: QuestionAttempt) => void) {
-    const submitBtn = document.querySelector(
-      'button[type="submit"], ._1f6t1qk'
-    );
-    if (submitBtn) {
-      submitBtn.addEventListener(
-        "click",
-        () => {
-          const question = this.extractQuestion();
-          const answer = this.extractAnswer();
-          if (question && answer) {
-            onCapture({
-              question,
-              answer,
-              timestamp: Date.now(),
-              site: this.site,
-              url: location.href,
-            });
-          }
-        },
-        true
-      );
+  private extractTextQuestion(baseQuestion: BaseQuestion): TextQuestion {
+    const question: TextQuestion = {
+      ...baseQuestion,
+      type: QuestionType.TEXT,
+      content: "",
+    };
+    return question;
+  }
+
+  private extractVideoQuestion(baseQuestion: BaseQuestion): VideoQuestion {
+    const question: VideoQuestion = {
+      ...baseQuestion,
+      type: QuestionType.VIDEO,
+      videoUrl: "",
+    };
+    return question;
+  }
+
+  extractQuestion(): Question {
+    const questionType = this.getQuestionType();
+    const baseQuestion: BaseQuestion = {
+      type: questionType,
+    };
+
+    switch (questionType) {
+      case QuestionType.SINGLE_CHOICE:
+        return this.extractSingleChoiceQuestion(baseQuestion);
+      case QuestionType.MULTIPLE_CHOICE:
+        return this.extractMultipleChoiceQuestion(baseQuestion);
+      case QuestionType.TEXT:
+        return this.extractTextQuestion(baseQuestion);
+      case QuestionType.VIDEO:
+        return this.extractVideoQuestion(baseQuestion);
+      default:
+        throw new Error("Unsupported question type");
     }
   }
 
-  // No fetch interception needed for W3Schools at this time
-  async interceptFetchResponse(response: Response): Promise<void> {
-    // No-op
+  private extractSingleChoiceAnswer(
+    baseAnswer: BaseAnswer
+  ): SingleChoiceAnswer {
+    const answer: SingleChoiceAnswer = {
+      ...baseAnswer,
+      type: QuestionType.SINGLE_CHOICE,
+      value: "",
+    };
+    return answer;
+  }
+
+  private extractMultipleChoiceAnswer(
+    baseAnswer: BaseAnswer
+  ): MultipleChoiceAnswer {
+    const answer: MultipleChoiceAnswer = {
+      ...baseAnswer,
+      type: QuestionType.MULTIPLE_CHOICE,
+      value: [],
+    };
+    return answer;
+  }
+
+  private extractTextAnswer(baseAnswer: BaseAnswer): TextAnswer {
+    const answer: TextAnswer = {
+      ...baseAnswer,
+      type: QuestionType.TEXT,
+      value: "",
+    };
+    return answer;
+  }
+
+  private extractVideoAnswer(baseAnswer: BaseAnswer): VideoAnswer {
+    const answer: VideoAnswer = {
+      ...baseAnswer,
+      type: QuestionType.VIDEO,
+      value: "",
+    };
+    return answer;
+  }
+
+  extractAnswer(): Answer {
+    const questionType = this.getQuestionType();
+    const baseAnswer: BaseAnswer = {};
+
+    switch (questionType) {
+      case QuestionType.SINGLE_CHOICE:
+        return this.extractSingleChoiceAnswer(baseAnswer);
+      case QuestionType.MULTIPLE_CHOICE:
+        return this.extractMultipleChoiceAnswer(baseAnswer);
+      case QuestionType.TEXT:
+        return this.extractTextAnswer(baseAnswer);
+      case QuestionType.VIDEO:
+        return this.extractVideoAnswer(baseAnswer);
+      default:
+        throw new Error("Unsupported question type");
+    }
+  }
+
+  attachListeners(onCapture: (attempt: QuestionAttempt) => void) {
+    const observer = new MutationObserver(() => {
+      const checkAnswerButton = document.querySelector(
+        'button[data-testid="exercise-check-answer"]'
+      );
+      if (checkAnswerButton) {
+        checkAnswerButton.addEventListener(
+          "click",
+          () => {
+            const question = this.extractQuestion();
+            const answer = this.extractAnswer();
+            onCapture({
+              question,
+              answer,
+            });
+          },
+          { once: true }
+        );
+        // Disconnect observer after attaching the listener to prevent multiple attachments
+        // observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Cleanup observer when the component is unmounted
+    return () => {
+      observer.disconnect();
+    };
   }
 }

@@ -12,31 +12,32 @@ export default function RootLayout() {
     const attemptStartTime = Date.now();
 
     // Patch fetch only once per handler
-    const originalFetch = window.fetch;
+    // const originalFetch = window.fetch;
+    // if (!window._studyTrackerFetchPatched) {
+    //   window.fetch = async function (...args) {
+    //     const response = await originalFetch.apply(this, args);
+    //     if (typeof handler.interceptFetchResponse === "function") {
+    //       await handler.interceptFetchResponse(response);
+    //     }
+    //     return response;
+    //   };
+    //   // Mark that fetch has been patched to avoid multiple patches
+    //   window._studyTrackerFetchPatched = true;
+    // }
 
-    if (!window._studyTrackerFetchPatched) {
-      window.fetch = async function (...args) {
-        const response = await originalFetch.apply(this, args);
-        if (typeof handler.interceptFetchResponse === "function") {
-          await handler.interceptFetchResponse(response);
-        }
-        return response;
-      };
-
-      // Mark that fetch has been patched to avoid multiple patches
-      window._studyTrackerFetchPatched = true;
-    }
-
-    // Cleanup the listener when the component is unmounted
     handler.attachListeners((attempt: QuestionAttempt) => {
-      attempt.durationMs = Date.now() - attemptStartTime;
+      attempt.timestamp = Date.now();
+      attempt.durationMs = attempt.timestamp - attemptStartTime;
+      attempt.url = window.location.href;
+      attempt.site = handler.site;
+
       // send attempt to background script or handle it as needed
       console.log("Captured question attempt:", attempt);
     });
   }, []);
 
   return (
-    <main className="absolute top-1/2 left-0 h-fit flex flex-col bg-orange-500 text-white">
+    <main className="fixed bottom-2 right-0 h-fit flex flex-col bg-orange-500 text-white">
       <Outlet />
       <nav className="mt-4">
         <RequireAuth>
